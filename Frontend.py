@@ -156,11 +156,11 @@ def run_program():
     run_btn_text.set("Running...")
     try:
         extract_personnel_pdfs.open_pdf(input_file, out_path)
-        lower_grid.config(text="Splitting ZNW successfully carried out.")
+        lower_grid.config(text="Splitting ZNW successfully carried out.", fg="#46B546")
         LOGGER.info(f"pdf successfully splitted.")
     except Exception as e:
         LOGGER.debug(f"{str(e)}")
-        lower_grid.config(text="Splitting ZNW was not successful. :( \n Error in log-file.")
+        lower_grid.config(text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.", fg="#E95454")
 
     run_btn_text.set("Run")
 
