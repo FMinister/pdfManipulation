@@ -160,7 +160,10 @@ def run_program():
         LOGGER.info(f"pdf successfully splitted.")
     except Exception as e:
         LOGGER.debug(f"{str(e)}")
-        lower_grid.config(text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.", fg="#E95454")
+        lower_grid.config(
+            text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.",
+            fg="#E95454",
+        )
 
     run_btn_text.set("Run")
 
