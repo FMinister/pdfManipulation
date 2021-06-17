@@ -1,143 +1,168 @@
 import tkinter as tk
-from tkinter import messagebox, END
+from tkinter import messagebox, END, PhotoImage, Entry, Button, Label
 from tkinter.filedialog import askopenfile, askdirectory
-import textwrap
+from progress.spinner import Spinner
 import extract_personnel_pdfs
 from logger import get_logger
 
 
 LOGGER = get_logger("Frontend")
 
-root = tk.Tk()
+window = tk.Tk()
 
-_FILEPATHS = ["", ""]
+window.geometry("800x500")
+window.configure(bg="#ffffff")
+canvas = tk.Canvas(
+    window,
+    bg="#ffffff",
+    height=500,
+    width=800,
+    bd=0,
+    highlightthickness=0,
+    relief="ridge",
+)
+canvas.place(x=0, y=0)
+window.resizable(False, False)
+window.title("ZNW-Splitter")
 
-canvas = tk.Canvas(root, width=650, height=300)
-canvas.grid(columnspan=10, rowspan=9)
-root.resizable(False, False)
-root.title("ZNW-Splitter")
-canvas.configure(background="#2B2B2B")
+# Title
+title = canvas.create_text(
+    131.0, 51.0, text="ZNW-Splitter", fill="#000000", font=("Roboto", int(30.0))
+)
+
+# Logo
+logo_img = PhotoImage(file=f"files/logo.png").subsample(2)
+logo_field = canvas.create_image(655, 51, image=logo_img)
 
 # instructions
-instructions = tk.Label(
-    root,
-    text="Select a Timesheet-PDF to split by employee.",
-    font="Helvetica 14 bold",
-    bg="#2B2B2B",
-    fg="#0092ff",
+open_instructions = canvas.create_text(
+    230,
+    130.0,
+    text="Select a Timesheet-PDF to split by employee:",
+    fill="#000000",
+    font=("Roboto", int(16.0)),
 )
-instructions.grid(columnspan=2, column=0, row=1)
 
-# buttono
-browse_text = tk.StringVar()
-browse_btn = tk.Button(
-    root,
-    textvariable=browse_text,
+save_instructions = canvas.create_text(
+    130,
+    225.0,
+    text="Select a path to save to:",
+    fill="#000000",
+    font=("Roboto", int(16.0)),
+)
+
+# File-Explorer-Boxes
+open_img = PhotoImage(file=f"files/io_image.png")
+open_field = canvas.create_image(297.0, 170.0, image=open_img)
+
+open_entry = Entry(
+    bd=0,
+    bg="#e5e5e5",
+    fg="black",
+    highlightthickness=0,
+    font=("Roboto", int(12.0)),
+    state="disabled",
+)
+
+open_entry.place(x=25.0, y=145, width=544.0, height=50)
+
+save_img = PhotoImage(file=f"files/io_image.png")
+save_field = canvas.create_image(297.0, 265.0, image=save_img)
+
+save_entry = Entry(
+    bd=0,
+    bg="#e5e5e5",
+    fg="black",
+    highlightthickness=0,
+    font=("Roboto", int(12.0)),
+    state="disabled",
+)
+
+save_entry.place(x=25.0, y=240, width=544.0, height=50)
+
+info_text = Label(
+    text="", bg="white", fg="black", justify="left", font=("Roboto", int(12.0))
+)
+info_text.place(x=20.0, y=340.0)
+
+# Buttons
+
+open_button_image = PhotoImage(file=f"files/open_button.png")
+open_button = Button(
+    image=open_button_image,
+    borderwidth=0,
+    highlightthickness=0,
     command=lambda: open_file(),
-    font="Helvetica",
-    bg="#0092ff",
-    fg="white",
-    height=2,
-    width=15,
+    relief="flat",
 )
-browse_text.set("Open...")
-browse_btn.grid(column=8, row=2)
 
-save_btn_text = tk.StringVar()
-save_btn = tk.Button(
-    root,
-    textvariable=save_btn_text,
+open_button.place(x=594, y=145, width=188, height=50)
+
+save_button_image = PhotoImage(file=f"files/save_button.png")
+save_button = Button(
+    image=save_button_image,
+    borderwidth=0,
+    highlightthickness=0,
     command=lambda: save_path_btn(),
-    font="Helvetica",
-    bg="#0092ff",
-    fg="white",
-    height=2,
-    width=15,
+    relief="flat",
 )
-save_btn_text.set("Save to...")
-save_btn.grid(column=8, row=3)
 
-run_btn_text = tk.StringVar()
-run_btn = tk.Button(
-    root,
-    textvariable=run_btn_text,
+save_button.place(x=594, y=240, width=188, height=50)
+
+run_button_image = PhotoImage(file=f"files/run_button.png")
+run_button = Button(
+    image=run_button_image,
+    borderwidth=0,
+    highlightthickness=0,
     command=lambda: run_program(),
-    font="Helvetica",
-    bg="#0092ff",
-    fg="white",
-    height=2,
-    width=15,
+    relief="flat",
 )
-run_btn_text.set("Run")
-run_btn.grid(column=8, row=4)
 
-text_box_open = tk.Text(root, width=55, height=2, padx=2, pady=2, bg="#9C9C9C")
-text_box_open.grid(column=1, row=2)
-text_box_save = tk.Text(root, width=55, height=2, padx=2, pady=2, bg="#9C9C9C")
-text_box_save.grid(column=1, row=3)
-
-lower_grid = tk.Label(
-    root,
-    text="",
-    font="Helvetica 12 bold",
-    bg="#2B2B2B",
-    fg="#46B546",
-)
-lower_grid.grid(columnspan=2, column=0, row=4)
+run_button.place(x=594, y=335, width=188, height=50)
 
 
 def open_file():
     LOGGER.info(f"open file dialog")
-    lower_grid.config(text="")
-    browse_text.set("loading...")
+    info_text.config(text="")
+    open_entry.configure(state="normal")
+    open_entry.delete(0, END)
     file = askopenfile(
-        parent=root, mode="rb", title="Choose a file", filetypes=[("Pdf file", "*.pdf")]
+        parent=window,
+        mode="rb",
+        title="Choose a file",
+        filetypes=[("Pdf file", "*.pdf")],
     )
     if file:
-        _FILEPATHS[0] = file.name
-        file_name = textwrap.wrap(file.name, 45)
-        text_box_open.config(state="normal")
-        text_box_open.delete("1.0", "end")
-        text_box_open.insert(1.0, "\n".join(file_name))
-        text_box_open.tag_configure("center", justify="center")
-        text_box_open.tag_add("center", 1.0, "end")
-        text_box_open.grid(column=1, row=2)
-        text_box_open.config(state="disabled")
-        LOGGER.info(f"open_file: {file_name}")
+        open_entry.insert(0, file.name)
+        open_entry.configure(state="disabled")
+        LOGGER.info(f"open_file: {file.name}")
     else:
+        open_entry.configure(state="disabled")
         LOGGER.debug(f"open_file canceled.")
-
-    browse_text.set("Open...")
 
 
 def save_path_btn():
     LOGGER.info(f"save file dialog")
-    lower_grid.config(text="")
-    save_btn_text.set("loading...")
+    info_text.config(text="")
+    save_entry.configure(state="normal")
+    save_entry.delete(0, END)
     filepath = askdirectory()
     if filepath:
-        _FILEPATHS[1] = filepath
-        file_name = textwrap.wrap(filepath, 45)
-        text_box_save.config(state="normal")
-        text_box_save.delete("1.0", "end")
-        text_box_save.insert(1.0, "\n".join(file_name))
-        text_box_save.tag_configure("center", justify="center")
-        text_box_save.tag_add("center", 1.0, "end")
-        text_box_save.grid(column=1, row=3)
-        text_box_save.config(state="disabled")
-        LOGGER.info(f"save_path: {file_name}")
+        save_entry.insert(0, filepath)
+        save_entry.configure(state="disabled")
+        LOGGER.info(f"save_path: {filepath}")
     else:
+        save_entry.configure(state="disabled")
         LOGGER.debug(f"save_file canceled.")
 
-    save_btn_text.set("Save to...")
 
-
+#
+#
 def run_program():
-    lower_grid.config(text="")
-
     LOGGER.info(f"running...")
-    input_file = _FILEPATHS[0]
-    out_path = _FILEPATHS[1]
+    info_text.config(text="")
+    input_file = open_entry.get()
+    out_path = save_entry.get()
     if input_file == "":
         LOGGER.info(f"input file path is empty.")
         tk.messagebox.showwarning(
@@ -153,19 +178,16 @@ def run_program():
         )
         return
 
-    run_btn_text.set("Running...")
     try:
         extract_personnel_pdfs.open_pdf(input_file, out_path)
-        lower_grid.config(text="Splitting ZNW successfully carried out.", fg="#46B546")
+        info_text.config(text="Splitting ZNW successfully carried out.", fg="#46B546")
         LOGGER.info(f"pdf successfully splitted.")
     except Exception as e:
         LOGGER.debug(f"{str(e)}")
-        lower_grid.config(
+        info_text.config(
             text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.",
             fg="#E95454",
         )
 
-    run_btn_text.set("Run")
 
-
-root.mainloop()
+window.mainloop()
