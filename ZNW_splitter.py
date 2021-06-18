@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, END, PhotoImage, Entry, Button, Label
 from tkinter.filedialog import askopenfile, askdirectory
-from progress.spinner import Spinner
+from tkinter import ttk
+from threading import Thread
 import extract_personnel_pdfs
 from logger import get_logger
 
@@ -114,11 +115,20 @@ run_button = Button(
     image=run_button_image,
     borderwidth=0,
     highlightthickness=0,
-    command=lambda: run_program(),
+    command=lambda: Thread(target=run_program).start(),
     relief="flat",
 )
 
 run_button.place(x=594, y=335, width=188, height=50)
+
+# ProgressBar
+pb = ttk.Progressbar(
+            window,
+            orient='horizontal',
+            mode='indeterminate',
+            length=544
+        )
+pb.place(x=20, y=450)
 
 
 def open_file():
@@ -156,13 +166,12 @@ def save_path_btn():
         LOGGER.debug(f"save_file canceled.")
 
 
-#
-#
 def run_program():
     LOGGER.info(f"running...")
     info_text.config(text="")
     input_file = open_entry.get()
     out_path = save_entry.get()
+    pb.start(interval=10)
     if input_file == "":
         LOGGER.info(f"input file path is empty.")
         tk.messagebox.showwarning(
@@ -188,6 +197,8 @@ def run_program():
             text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.",
             fg="#E95454",
         )
+
+    pb.stop()
 
 
 window.mainloop()
