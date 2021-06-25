@@ -122,11 +122,15 @@ run_button = Button(
 run_button.place(x=594, y=335, width=188, height=50)
 
 # ProgressBar
+s = ttk.Style()
+s.theme_use('default')
+s.configure("black.Horizontal.TProgressbar", background='#00A19A')
 pb = ttk.Progressbar(
             window,
+            s='black.Horizontal.TProgressbar',
             orient='horizontal',
             mode='indeterminate',
-            length=544
+            length=544,
         )
 pb.place(x=20, y=450)
 
@@ -188,8 +192,12 @@ def run_program():
         return
 
     try:
-        extract_personnel_pdfs.open_pdf(input_file, out_path)
-        info_text.config(text="Splitting ZNW successfully carried out.", fg="#46B546")
+        not_assigned_pages = extract_personnel_pdfs.open_pdf(input_file, out_path)
+        if not not_assigned_pages:
+            not_assigned_pages = ""
+        else:
+            not_assigned_pages = f"Could not find data in pages {not_assigned_pages}"
+        info_text.config(text=f"Splitting ZNW successfully carried out. \r {not_assigned_pages}", fg="#46B546")
         LOGGER.info(f"pdf successfully splitted.")
     except Exception as e:
         LOGGER.debug(f"{str(e)}")
