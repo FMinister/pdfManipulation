@@ -1,9 +1,13 @@
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from datetime import datetime
 from logger import get_logger
+from queue import Queue
 
 
 LOGGER = get_logger("extract_personnel_pdfs")
+
+queue_pb = Queue()
+queue_pb_max = Queue()
 
 
 def open_pdf(pdf_path, output_path):
@@ -44,6 +48,7 @@ def get_first_personnel_number(pdf):
 
 def iterate_pages(pdf, save_to_path):
     number_of_pages = pdf.getNumPages()
+    queue_pb_max.put(number_of_pages)
     not_assigned_pages = []
 
     try:
@@ -51,6 +56,7 @@ def iterate_pages(pdf, save_to_path):
         page_numbers_for_output = []
 
         for page_number in range(number_of_pages):
+            queue_pb.put(page_number + 1)
             text_list = extract_text(pdf, page_number)
 
             if "Personalnummer:" in text_list:
@@ -124,7 +130,7 @@ def extract_personnel_infos_de(info_list):
     try:
         personal_number_index = info_list.index("Name:")
         azp_regel_index = info_list.index("AZPRegel:")
-        print(f"{personal_number_index}, {azp_regel_index}")
+        # print(f"{personal_number_index}, {azp_regel_index}")
         personnel_number = info_list[info_list.index("Personalnummer:") + 1]
         lastname = info_list[info_list.index("Name:") + 2]
         firstname = info_list[info_list.index("Name:") + 1]

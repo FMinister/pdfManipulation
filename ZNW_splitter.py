@@ -1,8 +1,11 @@
+import time
 import tkinter as tk
 from tkinter import messagebox, END, PhotoImage, Entry, Button, Label
 from tkinter.filedialog import askopenfile, askdirectory
+from ttkbootstrap import Style
 from tkinter import ttk
 from threading import Thread
+import threading
 import extract_personnel_pdfs
 from logger import get_logger
 
@@ -122,17 +125,30 @@ run_button = Button(
 run_button.place(x=594, y=335, width=188, height=50)
 
 # ProgressBar
-s = ttk.Style()
-s.theme_use('default')
-s.configure("black.Horizontal.TProgressbar", background='#00A19A')
-pb = ttk.Progressbar(
-            window,
-            s='black.Horizontal.TProgressbar',
-            orient='horizontal',
-            mode='indeterminate',
-            length=544,
-        )
-pb.place(x=20, y=450)
+def set_progressbar(queue_pb, queue_pb_max):
+    max_queue = queue_pb_max.get()
+    queue_current = queue_pb.get()
+    style = Style()
+    pb = ttk.Progressbar(
+        window,
+        style='success.Horizontal.TProgressbar',
+        orient='horizontal',
+        mode='determinate',
+        length=544,
+        maximum=max_queue
+    )
+    pb.place(x=20, y=450)
+
+    pb["value"] = 0
+
+    while max_queue > queue_current:
+        print(max_queue, queue_current)
+        pb["value"] = queue_current
+        queue_current = queue_pb.get()
+
+    pb["value"] = max_queue
+
+
 
 
 def open_file():
@@ -170,12 +186,25 @@ def save_path_btn():
         LOGGER.debug(f"save_file canceled.")
 
 
+# Getting errors from threads
+def excepthook(args):
+    LOGGER.debug(f"{str(args)}")
+    info_text.config(
+        text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.",
+        fg="#E95454",
+    )
+    raise Exception("Error in Thread. :(")
+
+threading.excepthook = excepthook
+
+
 def run_program():
     LOGGER.info(f"running...")
     info_text.config(text="")
     input_file = open_entry.get()
     out_path = save_entry.get()
-    pb.start(interval=10)
+    pb_thread = Thread(target=set_progressbar, args=(extract_personnel_pdfs.queue_pb, extract_personnel_pdfs.queue_pb_max))
+    pb_thread.start()
     if input_file == "":
         LOGGER.info(f"input file path is empty.")
         tk.messagebox.showwarning(
@@ -192,12 +221,11 @@ def run_program():
         return
 
     try:
-        not_assigned_pages = extract_personnel_pdfs.open_pdf(input_file, out_path)
-        if not not_assigned_pages:
-            not_assigned_pages = ""
-        else:
-            not_assigned_pages = f"Could not find data in pages {not_assigned_pages}"
-        info_text.config(text=f"Splitting ZNW successfully carried out. \r {not_assigned_pages}", fg="#46B546")
+        split_pdfs = Thread(target=extract_personnel_pdfs.open_pdf, args=(input_file, out_path))
+        split_pdfs.start()
+        split_pdfs.join()
+        pb_thread.join()
+        info_text.config(text=f"Splitting ZNW successfully carried out.", fg="#46B546")
         LOGGER.info(f"pdf successfully splitted.")
     except Exception as e:
         LOGGER.debug(f"{str(e)}")
@@ -205,8 +233,6 @@ def run_program():
             text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.",
             fg="#E95454",
         )
-
-    pb.stop()
 
 
 window.mainloop()
