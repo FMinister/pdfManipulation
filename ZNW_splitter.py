@@ -1,4 +1,3 @@
-import time
 import tkinter as tk
 from tkinter import messagebox, END, PhotoImage, Entry, Button, Label
 from tkinter.filedialog import askopenfile, askdirectory
@@ -27,7 +26,7 @@ canvas = tk.Canvas(
 )
 canvas.place(x=0, y=0)
 window.resizable(False, False)
-window.title("ZNW-Splitter")
+window.title("ZNW-Splitter | Version 0.1.0")
 
 # Title
 title = canvas.create_text(
@@ -192,6 +191,7 @@ def excepthook(args):
         text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.",
         fg="#E95454",
     )
+
     raise Exception("Error in Thread. :(")
 
 
