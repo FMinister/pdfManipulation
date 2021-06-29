@@ -2,6 +2,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from datetime import datetime
 from logger import get_logger
 from queue import Queue
+import re
 
 
 LOGGER = get_logger("extract_personnel_pdfs")
@@ -32,11 +33,15 @@ def get_first_personnel_number(pdf):
     for page in range(number_of_pages):
         page = pdf.getPage(page)
         text = page.extractText().split(" ")
-        text_list = [word.strip() for word in text if (word != " " and word != "")]
+        text_list = [
+            word.strip()
+            for word in text
+            if (word.strip() != " " and word.strip() != "")
+        ]
 
-        if "Personalnummer:" in text_list:
+        if any(filter(re.compile(".*Personalnummer.*").match, text_list)):
             return extract_personnel_infos_de(text_list)
-        elif "Employee:" in text_list:
+        elif any(filter(re.compile(".*Employee.*").match, text_list)):
             return extract_personnel_infos_en(text_list)
         else:
             LOGGER.debug(f"could not find a personnel number: {text_list}")
@@ -59,8 +64,12 @@ def iterate_pages(pdf, save_to_path):
             queue_pb.put(page_number + 1)
             text_list = extract_text(pdf, page_number)
 
-            if "Personalnummer:" in text_list:
-                personnel_number_index = text_list.index("Personalnummer:") + 1
+            if any(filter(re.compile(".*Personalnummer.*").match, text_list)):
+                personnel_number_index = [
+                    i
+                    for i, item in enumerate(text_list)
+                    if re.search(re.compile(".*Personalnummer.*"), item)
+                ][0] + 1
 
                 if text_list[personnel_number_index] == personnel_number:
                     page_numbers_for_output.append(page_number)
@@ -82,8 +91,12 @@ def iterate_pages(pdf, save_to_path):
                 else:
                     LOGGER.debug("could not find fitting personnel number.")
                     continue
-            elif "Employee:" in text_list:
-                personnel_number_index = text_list.index("Employee:") + 1
+            elif any(filter(re.compile(".*Employee.*").match, text_list)):
+                personnel_number_index = personnel_number_index = [
+                    i
+                    for i, item in enumerate(text_list)
+                    if re.search(re.compile(".*Employee.*"), item)
+                ][0] + 1
 
                 if text_list[personnel_number_index] == personnel_number:
                     page_numbers_for_output.append(page_number)
@@ -110,8 +123,9 @@ def iterate_pages(pdf, save_to_path):
                 LOGGER.debug("could not find any personnel number.")
                 continue
 
-        save_path = f"{save_to_path}\\{date} {lastname}, {firstname}.pdf"
-        save_pdf(pdf, page_numbers_for_output, save_path)
+        if lastname != "unbekannt":
+            save_path = f"{save_to_path}\\{date} {lastname}, {firstname}.pdf"
+            save_pdf(pdf, page_numbers_for_output, save_path)
 
         return not_assigned_pages
     except Exception as e:
@@ -123,20 +137,41 @@ def extract_text(pdf, page_number):
     page = pdf.getPage(page_number)
     text = page.extractText()
 
-    return [word.strip() for word in text.split(" ")]
+    return [
+        word.strip()
+        for word in text.split(" ")
+        if (word.strip() != " " and word.strip() != "")
+    ]
 
 
 def extract_personnel_infos_de(info_list):
     try:
-        personal_number_index = info_list.index("Name:")
+        personal_name_index = info_list.index("Name:")
         azp_regel_index = info_list.index("AZPRegel:")
-        # print(f"{personal_number_index}, {azp_regel_index}")
-        personnel_number = info_list[info_list.index("Personalnummer:") + 1]
-        lastname = info_list[info_list.index("Name:") + 2]
-        firstname = info_list[info_list.index("Name:") + 1]
-        date = datetime.strptime(
-            info_list[info_list.index("Abrechnungszeitraum:") + 1], "%d.%m.%Y"
-        ).strftime("%Y-%m")
+        personal_number_index = [
+            i
+            for i, item in enumerate(info_list)
+            if re.search(re.compile(".*Personalnummer.*"), item)
+        ][0]
+        personnel_number = info_list[personal_number_index + 1]
+        firstname_index = [
+            index for index in range(azp_regel_index - personal_name_index - 2)
+        ]
+        firstname = "".join(
+            [
+                info_list[info_list.index("Name:") + index + 1]
+                for index in firstname_index
+            ]
+        )
+        lastname = info_list[info_list.index("AZPRegel:") - 1]
+        calc_date_index = [
+            i
+            for i, item in enumerate(info_list)
+            if re.search(re.compile(".*Abrechnungszeitraum.*"), item)
+        ][0]
+        date = datetime.strptime(info_list[calc_date_index + 1], "%d.%m.%Y").strftime(
+            "%Y-%m"
+        )
 
         LOGGER.info(
             f"first personnel: {personnel_number}, {lastname}, {firstname}, {date}"
@@ -150,12 +185,22 @@ def extract_personnel_infos_de(info_list):
 
 def extract_personnel_infos_en(info_list):
     try:
-        employee_index = info_list.index("Employee:")
+        employee_index = [
+            i
+            for i, item in enumerate(info_list)
+            if re.search(re.compile(".*Employee.*"), item)
+        ][0]
         personnel_number = info_list[employee_index + 1]
-        lastname = info_list[employee_index + 3]
-        firstname = info_list[employee_index + 2]
+        if info_list[employee_index + 3].isalpha():
+            lastname = info_list[employee_index + 4]
+            firstname = (
+                f"{info_list[employee_index + 2]} {info_list[employee_index + 3]}"
+            )
+        else:
+            lastname = info_list[employee_index + 3]
+            firstname = info_list[employee_index + 2]
         date = datetime.strptime(
-            info_list[info_list.index("period:") + 1], "%d.%m.%Y"
+            info_list[info_list.index("to") + 1], "%d.%m.%Y"
         ).strftime("%Y-%m")
 
         LOGGER.info(
@@ -181,6 +226,7 @@ def save_pdf(pdf, pages, save_path):
 
 
 if __name__ == "__main__":
-    input_path = r"C:\SSD\Downloads\ZNW_data\ZNW_data\ZNW_big_file.pdf"
-    output_path = r"C:\SSD\Downloads\ZNW_data\ZNW_data\neu"
+    # input_path = r"C:\Users\Little-J\Documents\Arbeit\ZNW\ZNW_data\ZNW_data\ZNW_big_file.pdf"
+    input_path = r"C:\Users\Little-J\Documents\Arbeit\ZNW\Data\Data\ZNW_Spool_Weiterleitung_Export_to_pdf.pdf"
+    output_path = r"C:\Users\Little-J\Documents\Arbeit\ZNW\ZNW_data\ZNW_data\neu"
     open_pdf(input_path, output_path)

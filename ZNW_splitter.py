@@ -124,6 +124,7 @@ run_button = Button(
 
 run_button.place(x=594, y=335, width=188, height=50)
 
+
 # ProgressBar
 def set_progressbar(queue_pb, queue_pb_max):
     max_queue = queue_pb_max.get()
@@ -131,11 +132,11 @@ def set_progressbar(queue_pb, queue_pb_max):
     style = Style()
     pb = ttk.Progressbar(
         window,
-        style='success.Horizontal.TProgressbar',
-        orient='horizontal',
-        mode='determinate',
+        style="success.Horizontal.TProgressbar",
+        orient="horizontal",
+        mode="determinate",
         length=544,
-        maximum=max_queue
+        maximum=max_queue,
     )
     pb.place(x=20, y=450)
 
@@ -147,8 +148,6 @@ def set_progressbar(queue_pb, queue_pb_max):
         queue_current = queue_pb.get()
 
     pb["value"] = max_queue
-
-
 
 
 def open_file():
@@ -195,6 +194,7 @@ def excepthook(args):
     )
     raise Exception("Error in Thread. :(")
 
+
 threading.excepthook = excepthook
 
 
@@ -203,7 +203,10 @@ def run_program():
     info_text.config(text="")
     input_file = open_entry.get()
     out_path = save_entry.get()
-    pb_thread = Thread(target=set_progressbar, args=(extract_personnel_pdfs.queue_pb, extract_personnel_pdfs.queue_pb_max))
+    pb_thread = Thread(
+        target=set_progressbar,
+        args=(extract_personnel_pdfs.queue_pb, extract_personnel_pdfs.queue_pb_max),
+    )
     pb_thread.start()
     if input_file == "":
         LOGGER.info(f"input file path is empty.")
@@ -221,7 +224,9 @@ def run_program():
         return
 
     try:
-        split_pdfs = Thread(target=extract_personnel_pdfs.open_pdf, args=(input_file, out_path))
+        split_pdfs = Thread(
+            target=extract_personnel_pdfs.open_pdf, args=(input_file, out_path)
+        )
         split_pdfs.start()
         split_pdfs.join()
         pb_thread.join()
