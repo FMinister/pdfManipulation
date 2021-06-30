@@ -36,7 +36,7 @@ def get_first_personnel_number(pdf):
         text_list = [
             word.strip()
             for word in text
-            if (word.strip() != " " and word.strip() != "")
+            if (word.strip() != " " and word.strip() != "" and word.strip() != ":")
         ]
 
         if any(filter(re.compile(".*Personalnummer.*").match, text_list)):
@@ -140,7 +140,7 @@ def extract_text(pdf, page_number):
     return [
         word.strip()
         for word in text.split(" ")
-        if (word.strip() != " " and word.strip() != "")
+        if (word.strip() != " " and word.strip() != "" and word.strip() != ":")
     ]
 
 
@@ -157,7 +157,7 @@ def extract_personnel_infos_de(info_list):
         firstname_index = [
             index for index in range(azp_regel_index - personal_name_index - 2)
         ]
-        firstname = "".join(
+        firstname = " ".join(
             [
                 info_list[info_list.index("Name:") + index + 1]
                 for index in firstname_index
@@ -191,14 +191,8 @@ def extract_personnel_infos_en(info_list):
             if re.search(re.compile(".*Employee.*"), item)
         ][0]
         personnel_number = info_list[employee_index + 1]
-        if info_list[employee_index + 3].isalpha():
-            lastname = info_list[employee_index + 4]
-            firstname = (
-                f"{info_list[employee_index + 2]} {info_list[employee_index + 3]}"
-            )
-        else:
-            lastname = info_list[employee_index + 3]
-            firstname = info_list[employee_index + 2]
+        lastname = info_list[employee_index + 3]
+        firstname = info_list[employee_index + 2]
         date = datetime.strptime(
             info_list[info_list.index("to") + 1], "%d.%m.%Y"
         ).strftime("%Y-%m")
