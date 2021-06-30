@@ -3,7 +3,7 @@ from tkinter import messagebox, END, PhotoImage, Entry, Button, Label
 from tkinter.filedialog import askopenfile, askdirectory
 from ttkbootstrap import Style
 from tkinter import ttk
-from threading import Thread
+from threading import Thread, Event
 import threading
 import extract_personnel_pdfs
 from logger import get_logger
@@ -122,10 +122,14 @@ run_button = Button(
 
 run_button.place(x=594, y=335, width=188, height=50)
 
-
+# ! TODO Progressbar muss vorher initialisiert werden, weil sie sonst erst hinterher gerendert wird!
+# TODO also vorher rendern und dann Werte zuweisen!
 # ProgressBar
 def set_progressbar(queue_pb, queue_pb_max):
-    max_queue = queue_pb_max.get()
+    while True:
+        max_queue = queue_pb_max.get()
+        if max_queue != 0:
+            break
     queue_current = queue_pb.get()
     style = Style()
     pb = ttk.Progressbar(
@@ -201,6 +205,7 @@ def run_program():
         args=(extract_personnel_pdfs.queue_pb, extract_personnel_pdfs.queue_pb_max),
     )
     pb_thread.start()
+
     if input_file == "":
         LOGGER.info(f"input file path is empty.")
         tk.messagebox.showwarning(

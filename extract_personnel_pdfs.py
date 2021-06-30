@@ -3,6 +3,7 @@ from datetime import datetime
 from logger import get_logger
 from queue import Queue
 import re
+import time
 
 
 LOGGER = get_logger("extract_personnel_pdfs")
@@ -55,6 +56,8 @@ def iterate_pages(pdf, save_to_path):
     number_of_pages = pdf.getNumPages()
     queue_pb_max.put(number_of_pages)
     not_assigned_pages = []
+
+    time.sleep(10)
 
     try:
         personnel_number, lastname, firstname, date = get_first_personnel_number(pdf)
