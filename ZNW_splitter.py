@@ -59,12 +59,12 @@ open_img = PhotoImage(file=f"files/io_image.png")
 open_field = canvas.create_image(297.0, 170.0, image=open_img)
 
 open_entry = Entry(
-    bd=0,
+    window,
     bg="#e5e5e5",
+    bd=0,
     fg="black",
     highlightthickness=0,
     font=("Roboto", int(12.0)),
-    state="disabled",
 )
 
 open_entry.place(x=25.0, y=145, width=544.0, height=50)
@@ -78,7 +78,6 @@ save_entry = Entry(
     fg="black",
     highlightthickness=0,
     font=("Roboto", int(12.0)),
-    state="disabled",
 )
 
 save_entry.place(x=25.0, y=240, width=544.0, height=50)
@@ -152,7 +151,6 @@ def set_progressbar(queue_pb, queue_pb_max):
 def open_file():
     LOGGER.info(f"open file dialog")
     info_text.config(text="")
-    open_entry.configure(state="normal")
     open_entry.delete(0, END)
     file = askopenfile(
         parent=window,
@@ -162,25 +160,20 @@ def open_file():
     )
     if file:
         open_entry.insert(0, file.name)
-        open_entry.configure(state="disabled")
         LOGGER.info(f"open_file: {file.name}")
     else:
-        open_entry.configure(state="disabled")
         LOGGER.debug(f"open_file canceled.")
 
 
 def save_path_btn():
     LOGGER.info(f"save file dialog")
     info_text.config(text="")
-    save_entry.configure(state="normal")
     save_entry.delete(0, END)
     filepath = askdirectory()
     if filepath:
         save_entry.insert(0, filepath)
-        save_entry.configure(state="disabled")
         LOGGER.info(f"save_path: {filepath}")
     else:
-        save_entry.configure(state="disabled")
         LOGGER.debug(f"save_file canceled.")
 
 
