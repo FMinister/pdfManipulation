@@ -5,7 +5,6 @@ from queue import Queue
 import re
 import time
 
-
 LOGGER = get_logger("extract_personnel_pdfs")
 
 queue_pb = Queue()
@@ -17,9 +16,7 @@ def open_pdf(pdf_path, output_path):
         with open(pdf_path, "rb") as f:
             LOGGER.info(f"opening path: {pdf_path}")
             pdf = PdfFileReader(f)
-            not_assigned_pages = iterate_pages(pdf, output_path)
-
-            return not_assigned_pages
+            iterate_pages(pdf, output_path)
     except ValueError as e:
         LOGGER.debug(str(e))
         raise ValueError(str(e))
@@ -55,7 +52,6 @@ def get_first_personnel_number(pdf):
 def iterate_pages(pdf, save_to_path):
     number_of_pages = pdf.getNumPages()
     queue_pb_max.put(number_of_pages)
-    not_assigned_pages = []
 
     time.sleep(10)
 
@@ -122,15 +118,12 @@ def iterate_pages(pdf, save_to_path):
                     LOGGER.debug("could not find fitting personnel number.")
                     continue
             else:
-                not_assigned_pages.append(page_number)
-                LOGGER.debug("could not find any personnel number.")
+                LOGGER.debug(f"could not find any personnel number. {page_number}")
                 continue
 
         if lastname != "unbekannt":
             save_path = f"{save_to_path}\\{date} {lastname}, {firstname}.pdf"
             save_pdf(pdf, page_numbers_for_output, save_path)
-
-        return not_assigned_pages
     except Exception as e:
         LOGGER.debug(f"{str(e)}")
         raise ValueError(str(e))

@@ -88,7 +88,6 @@ info_text = Label(
 info_text.place(x=20.0, y=340.0)
 
 # Buttons
-
 open_button_image = PhotoImage(file=f"files/open_button.png")
 open_button = Button(
     image=open_button_image,
@@ -120,29 +119,25 @@ run_button = Button(
     relief="flat",
 )
 
-run_button.place(x=594, y=335, width=188, height=50)
+run_button.place(x=594, y=425, width=188, height=50)
 
-# ! TODO Progressbar muss vorher initialisiert werden, weil sie sonst erst hinterher gerendert wird!
-# TODO also vorher rendern und dann Werte zuweisen!
+# Render Progressbar
+style = Style()
+pb = ttk.Progressbar(
+    window,
+    style="success.Horizontal.TProgressbar",
+    orient="horizontal",
+    mode="determinate",
+    length=544,
+)
+pb.place(x=20, y=450)
+
+
 # ProgressBar
 def set_progressbar(queue_pb, queue_pb_max):
-    while True:
-        max_queue = queue_pb_max.get()
-        if max_queue != 0:
-            break
+    max_queue = queue_pb_max.get()
+    pb["maximum"] = max_queue
     queue_current = queue_pb.get()
-    style = Style()
-    pb = ttk.Progressbar(
-        window,
-        style="success.Horizontal.TProgressbar",
-        orient="horizontal",
-        mode="determinate",
-        length=544,
-        maximum=max_queue,
-    )
-    pb.place(x=20, y=450)
-
-    pb["value"] = 0
 
     while max_queue > queue_current:
         print(max_queue, queue_current)
@@ -154,6 +149,7 @@ def set_progressbar(queue_pb, queue_pb_max):
 
 def open_file():
     LOGGER.info(f"open file dialog")
+    pb["value"] = 0
     info_text.config(text="")
     open_entry.delete(0, END)
     file = askopenfile(
@@ -171,6 +167,7 @@ def open_file():
 
 def save_path_btn():
     LOGGER.info(f"save file dialog")
+    pb["value"] = 0
     info_text.config(text="")
     save_entry.delete(0, END)
     filepath = askdirectory()
@@ -196,15 +193,13 @@ threading.excepthook = excepthook
 
 
 def run_program():
+    run_button["state"] = "disabled"
+    window.config(cursor="wait")
+    pb["value"] = 0
     LOGGER.info(f"running...")
     info_text.config(text="")
     input_file = open_entry.get()
     out_path = save_entry.get()
-    pb_thread = Thread(
-        target=set_progressbar,
-        args=(extract_personnel_pdfs.queue_pb, extract_personnel_pdfs.queue_pb_max),
-    )
-    pb_thread.start()
 
     if input_file == "":
         LOGGER.info(f"input file path is empty.")
@@ -212,6 +207,8 @@ def run_program():
             "No file selected!",
             "Please select a time sheet file which you would like to split!",
         )
+        window.config(cursor="")
+        run_button["state"] = "normal"
         return
 
     if out_path == "":
@@ -219,9 +216,16 @@ def run_program():
         tk.messagebox.showwarning(
             "No save-path selected!", "Please choose save folder."
         )
+        window.config(cursor="")
+        run_button["state"] = "normal"
         return
 
     try:
+        pb_thread = Thread(
+            target=set_progressbar,
+            args=(extract_personnel_pdfs.queue_pb, extract_personnel_pdfs.queue_pb_max),
+        )
+        pb_thread.start()
         split_pdfs = Thread(
             target=extract_personnel_pdfs.open_pdf, args=(input_file, out_path)
         )
@@ -229,6 +233,8 @@ def run_program():
         split_pdfs.join()
         pb_thread.join()
         info_text.config(text=f"Splitting ZNW successfully carried out.", fg="#46B546")
+        window.config(cursor="")
+        run_button["state"] = "normal"
         LOGGER.info(f"pdf successfully splitted.")
     except Exception as e:
         LOGGER.debug(f"{str(e)}")
@@ -236,6 +242,8 @@ def run_program():
             text=f"Splitting ZNW was not successful. :( \n Check errors in log-file.",
             fg="#E95454",
         )
+        window.config(cursor="")
+        run_button["state"] = "normal"
 
 
 window.mainloop()
