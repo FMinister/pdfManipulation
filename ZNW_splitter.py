@@ -28,9 +28,9 @@ window.resizable(False, False)
 window.title("ZNW-Splitter | Version 0.1.0")
 
 # Title
-title = canvas.create_text(
-    131.0, 51.0, text="ZNW-Splitter", fill="#000000", font=("Roboto", int(30.0))
-)
+# title = canvas.create_text(
+#     131.0, 51.0, text="ZNW-Splitter", fill="#000000", font=("Roboto", int(30.0))
+# )
 
 # Logo
 logo_img = PhotoImage(file=f"files/logo.png").subsample(2)
