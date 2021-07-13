@@ -1,9 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, END, PhotoImage, Entry, Button, Label
 from tkinter.filedialog import askopenfile, askdirectory
-from ttkbootstrap import Style
 from tkinter import ttk
-from threading import Thread, Event
+from threading import Thread
 import threading
 import extract_personnel_pdfs
 from logger import get_logger
@@ -122,7 +121,6 @@ run_button = Button(
 run_button.place(x=594, y=425, width=188, height=50)
 
 # Render Progressbar
-style = Style()
 pb = ttk.Progressbar(
     window,
     style="success.Horizontal.TProgressbar",
