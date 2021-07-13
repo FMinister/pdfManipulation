@@ -8,7 +8,7 @@ def get_logger(name):
     logging.basicConfig(
         level=logging.DEBUG,
         format=log_format,
-        # filename="ZNW_splitter.log",
+        filename="ZNW_splitter.log",
         filemode="a",
     )
     console = logging.StreamHandler()
